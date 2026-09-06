@@ -11,7 +11,7 @@ Filesystem mount
         ↓
 Jellyfin
         ↓
-Media Home experience
+JojoFlix experience
         ↓
 Users / devices
 ```
@@ -26,26 +26,34 @@ The POC must support:
 - local-network playback
 - remote playback over HTTPS
 - migration from cloud storage to a future NAS without changing the application layer
+- availability without the Mac mini being powered on in the final hosted architecture
 
 ## Phase 1 — Local playback baseline
 
-Before introducing cloud storage, validate Jellyfin with a small local test library.
+**Status: validated on Mac mini M4.**
 
-Test set:
+The local server runs on a Mac mini M4 connected by Ethernet. A second device can access Jellyfin over the local network.
 
-- 1 x 1080p H.264 movie
-- 1 x HEVC/H.265 movie if available
-- 1 x subtitle file (SRT)
-- 1 x episode of a series
+Validated test set:
 
-Acceptance criteria:
+- `Troie (2004)` — 4K HEVC Main 10, HDR10, AC3 — browser playback required transcoding to H.264/AAC.
+- `Projet Dernière Chance (2026)` — 4K HEVC Main 10, AAC — Direct Streaming.
+- `Gladiator (2000)` — 4K HEVC Main 10, HDR10, AAC — Direct Streaming.
 
-- library scans correctly
-- metadata is retrieved
-- playback starts reliably
-- subtitles work
-- resume position works
-- a second user has independent progress
+Acceptance results:
+
+- [x] library scans correctly
+- [x] metadata and artwork are retrieved
+- [x] playback starts reliably
+- [x] audio/subtitle tracks are available
+- [x] resume position works
+- [x] a second user has independent progress
+- [x] a second device can access the server over the local network
+- [x] two simultaneous 4K streams were tested successfully
+- [x] Direct Streaming works for compatible files
+- [x] Transcoding works when required
+
+Important observation: MKV itself is not the reason for transcoding. The tested HEVC/AAC MKV files streamed directly, while `Troie` required transcoding because of source/player compatibility. The future VPS therefore needs to be sized around the expected transcoding workload, not simply the number of users.
 
 ## Phase 2 — Cloud storage
 
@@ -62,11 +70,23 @@ Evaluate providers based on:
 
 The storage provider must remain an interchangeable layer.
 
+Target architecture:
+
+```text
+Cloud storage
+      ↓
+rclone / filesystem layer
+      ↓
+Jellyfin on hosted server
+      ↓
+JojoFlix / player
+      ↓
+Users & devices
+```
+
 ## Phase 3 — Remote access
 
-Expose the service securely through HTTPS and a reverse proxy.
-
-Target architecture:
+The final service must be accessible when the Mac mini is powered off. The intended production architecture is a hosted server/VPS with HTTPS and a reverse proxy.
 
 ```text
 Internet
@@ -75,37 +95,48 @@ HTTPS / domain
    ↓
 Reverse proxy
    ↓
-Jellyfin
+Jellyfin / JojoFlix
    ↓
-Media storage
+Cloud media storage
 ```
 
 Do not expose Jellyfin directly to the public internet as the final architecture.
 
 ## Phase 4 — Multi-user test
 
-Test simultaneously with:
+Validated locally with:
+
+- owner/admin account
+- coloc test account
+
+Next test later:
 
 - owner/admin account
 - coloc account
 - friend account
+- simultaneous remote sessions
 
 Validate that each user has independent authentication and playback state.
 
-## Phase 5 — Media Home UI
+## Phase 5 — JojoFlix UI
 
 Only after the playback infrastructure is reliable, start the custom interface.
 
 The UI should consume a stable media/playback layer rather than owning storage logic.
 
+The product name is **JojoFlix**; `Media Home` remains the technical/development project name.
+
 ## Definition of Done
 
-- [ ] Test library visible
-- [ ] Metadata working
-- [ ] Subtitles working
-- [ ] Resume working per user
-- [ ] At least two users can stream independently
+- [x] Test library visible
+- [x] Metadata working
+- [x] Audio/subtitles tested
+- [x] Resume working per user
+- [x] At least two users can stream independently
+- [x] Local-network playback working
+- [x] Direct streaming and transcoding behavior validated
 - [ ] Remote HTTPS access working
 - [ ] Cloud storage validated
+- [ ] VPS-hosted architecture validated
 - [ ] Cloud → NAS migration path documented
-- [ ] First Media Home interface can sit on top of the validated backend
+- [ ] First JojoFlix interface can sit on top of the validated backend
